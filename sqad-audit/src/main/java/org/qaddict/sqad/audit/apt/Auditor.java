@@ -21,6 +21,7 @@ import java.util.stream.Stream;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static java.util.stream.Collectors.toSet;
 import static java.util.stream.Stream.iterate;
 import static javax.lang.model.util.ElementFilter.fieldsIn;
 import static javax.lang.model.util.ElementFilter.typesIn;
@@ -37,7 +38,41 @@ public class Auditor extends AbstractProcessor implements Consumer<TypeElement>,
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        typesIn(roundEnv.getElementsAnnotatedWith(Entity.class)).stream().filter(this).forEach(this);
+        Set<TypeElement> entities = typesIn(roundEnv.getElementsAnnotatedWith(Entity.class)).stream().filter(this).collect(toSet());
+
+        // Generate revision classes
+        entities.forEach(this);
+
+        // Generate factory
+        if(!entities.isEmpty()) {
+            try (PrintWriter writer = new PrintWriter(processingEnv.getFiler().createSourceFile("org.qaddict.sqad.audit.RevisionFactory").openWriter())) {
+                writer.println("""
+                        package org.qaddict.sqad.audit;
+                                            
+                        public final class RevisionFactory {
+                                            
+                        \tpublic static Object revisionOf(Object entity) {
+                        \t\treturn switch(entity) {
+                        """.stripIndent());
+
+                entities.forEach(entity -> writer.printf("""
+                        \t\t\tcase %1$s.%2$s a%2$s -> new %1$s.%2$sRevision();
+                        
+                        """, processingEnv.getElementUtils().getPackageOf(entity), entity.getSimpleName()));
+
+                writer.println("""
+                        \t\t\tdefault -> throw new IllegalStateException("");
+                        \t\t};
+                        \t}
+
+                        }
+                        """.stripIndent());
+
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         return false;
     }
 

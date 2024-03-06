@@ -2,10 +2,13 @@ package org.qaddict.sqad.data.records;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Id;
+import org.qaddict.sqad.AuditListener;
 import org.qaddict.sqad.data.Record;
 
 @Entity
+@EntityListeners(AuditListener.class)
 public class Project extends Record<Project> {
 
     @Id
