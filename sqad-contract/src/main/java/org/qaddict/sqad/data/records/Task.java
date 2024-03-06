@@ -4,9 +4,14 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import org.qaddict.sqad.data.Record;
 
 @Entity
+@Table(
+        uniqueConstraints = @UniqueConstraint(columnNames = {"planId", "testId"})
+)
 public class Task extends Record<Task> {
 
     @Id
